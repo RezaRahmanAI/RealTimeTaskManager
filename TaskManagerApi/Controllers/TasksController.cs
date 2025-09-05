@@ -113,5 +113,32 @@ namespace TaskManagerApi.Controllers
                 return StatusCode(500, new { Error = "Task update failed", Details = ex.Message });
             }
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTask(int id)
+        {
+            try
+             {
+                Console.WriteLine($"DeleteTask Id = ", id);
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { Error = "User not found" });
+                }
+
+                var task = await _context.Tasks.Where(t => t.Id == id && t.AssignedToId == userId).FirstOrDefaultAsync();
+                if (task == null) return NotFound(new { Error = "Task not found " });
+
+                _context.Tasks.Remove(task);
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"Task Deleted: Id = {id}");
+                await _hubContext.Clients.All.SendAsync("ReceiveTaskDeleted", id);
+                return NoContent();
+            }catch (Exception ex)
+            {
+                Console.WriteLine($"DeleteTask Exception: {ex.Message}");
+                return StatusCode(500, new { Error = "Task deletion failed", Details = ex.Message });
+            }
+        }
     }
 }

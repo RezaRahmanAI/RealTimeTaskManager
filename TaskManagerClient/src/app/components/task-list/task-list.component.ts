@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TaskService } from '../../services/task.service';
+import { TaskService, UpdateTaskDto } from '../../services/task.service';
 import { Router } from '@angular/router';
-import { CreateTaskDto, TaskItem, UpdateTaskDto } from '../../models/model';
+import { CreateTaskDto, TaskItem } from '../../models/model';
 
 @Component({
   selector: 'app-task-list',
@@ -44,11 +44,19 @@ import { CreateTaskDto, TaskItem, UpdateTaskDto } from '../../models/model';
               task.status || 'No Status'
             }})</span
           >
-          <select [(ngModel)]="task.status" (change)="updateTaskStatus(task)">
-            <option value="ToDo">ToDo</option>
-            <option value="InProgress">InProgress</option>
-            <option value="Done">Done</option>
-          </select>
+          <div>
+            <select [(ngModel)]="task.status" (change)="updateTaskStatus(task)">
+              <option value="ToDo">ToDo</option>
+              <option value="InProgress">InProgress</option>
+              <option value="Done">Done</option>
+            </select>
+            <button
+              (click)="deleteTask(task.id)"
+              class="bg-red-500 text-white p-2 ml-2 rounded"
+            >
+              Delete
+            </button>
+          </div>
         </li>
       </ul>
     </div>
@@ -91,6 +99,11 @@ export class TaskListComponent implements OnInit {
         this.tasks.push(updatedTask);
       }
     });
+
+    this.taskService.getTaskDeleted().subscribe((taskId) => {
+      console.log('Deleted Task via SignalR:', taskId);
+      this.tasks = this.tasks.filter((t) => t.id !== taskId);
+    });
   }
 
   createTask() {
@@ -118,6 +131,20 @@ export class TaskListComponent implements OnInit {
       error: (err) => {
         this.errorMessage = err.error?.error || 'Error updating task status';
         console.error('Error updating task status:', err);
+      },
+    });
+  }
+
+  deleteTask(id: number) {
+    console.log('Deleting Task:', id);
+    this.taskService.deleteTask(id).subscribe({
+      next: () => {
+        console.log('Task Deleted:', id);
+        this.errorMessage = null;
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.error || 'Error deleting task';
+        console.error('Error deleting task:', err);
       },
     });
   }

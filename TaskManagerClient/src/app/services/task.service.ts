@@ -4,22 +4,40 @@ import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import { Observable, Subject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
-import { CreateTaskDto, TaskItem, UpdateTaskDto } from '../models/model';
+import { environment } from '../environments/environment';
 
+export interface TaskItem {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  createdAt: string;
+  assignedToId: string;
+}
 
+export interface CreateTaskDto {
+  title: string;
+  description: string;
+  status?: string;
+}
+
+export interface UpdateTaskDto {
+  status: string;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class TaskService {
-  private apiUrl = 'https://localhost:5001/api/tasks';
+  private apiUrl = environment.baseUrl+'/api/tasks';
   private hubConnection: HubConnection;
   private taskCreatedSubject = new Subject<TaskItem>();
   private taskUpdatedSubject = new Subject<TaskItem>();
+  private taskDeletedSubject = new Subject<number>();
 
   constructor(private http: HttpClient, private authService: AuthService) {
     this.hubConnection = new HubConnectionBuilder()
-      .withUrl('https://localhost:5001/taskHub', {
+      .withUrl(environment.baseUrl+'/taskHub', {
         accessTokenFactory: () => {
           const token = this.authService.getToken();
           console.log('SignalR Token:', token);
@@ -59,6 +77,11 @@ export class TaskService {
       };
       console.log('Mapped SignalR Task Update:', mappedTask);
       this.taskUpdatedSubject.next(mappedTask);
+    });
+
+    this.hubConnection.on('ReceiveTaskDeleted', (taskId: number) => {
+      console.log('SignalR Task Deleted:', taskId);
+      this.taskDeletedSubject.next(taskId);
     });
   }
 
@@ -103,10 +126,6 @@ export class TaskService {
       );
   }
 
-  getTaskCreated(): Observable<TaskItem> {
-    return this.taskCreatedSubject.asObservable();
-  }
-
   updateTaskStatus(id: number, taskDto: UpdateTaskDto): Observable<TaskItem> {
     return this.http
       .put<any>(`${this.apiUrl}/${id}`, taskDto, { headers: this.getHeaders() })
@@ -122,7 +141,21 @@ export class TaskService {
       );
   }
 
+  deleteTask(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`, {
+      headers: this.getHeaders(),
+    });
+  }
+
+  getTaskCreated(): Observable<TaskItem> {
+    return this.taskCreatedSubject.asObservable();
+  }
+
   getTaskUpdated(): Observable<TaskItem> {
     return this.taskUpdatedSubject.asObservable();
+  }
+
+  getTaskDeleted(): Observable<number> {
+    return this.taskDeletedSubject.asObservable();
   }
 }
