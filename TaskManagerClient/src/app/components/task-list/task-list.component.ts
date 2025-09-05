@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TaskItem } from '../../models/model';
-import { TaskService } from '../../services/task.service';
+import { CreateTaskDto, TaskService } from '../../services/task.service';
 
 @Component({
   selector: 'app-task-list',
@@ -13,31 +13,34 @@ import { TaskService } from '../../services/task.service';
 })
 export class TaskListComponent implements OnInit {
   tasks: TaskItem[] = [];
-  newTask: TaskItem = {
-    id: 0,
+  newTask: CreateTaskDto = {
+    
     title: '',
     description: '',
     status: 'ToDo',
-    createdAt: '',
+    
   };
 
-  /**
-   *
-   */
   constructor(private taskService: TaskService) {}
 
   ngOnInit() {
-    this.taskService.getTasks().subscribe((tasks) => (this.tasks = tasks));
-    this.taskService.getTaskUpdates().subscribe((update) => {
-      const task = this.tasks.find((t) => t.id === +update.taskId);
-      if (task) task.status = update.status;
+    this.taskService.getTasks().subscribe({
+      next: (tasks) => this.tasks = tasks,
+      error: (err) => console.error('Error fetching tasks: ', err)
+    })
+
+    this.taskService.getTaskCreated().subscribe({
+      next: (task) => {
+        this.tasks.push(task);
+      },
+      error: (err) => console.error('Error receiving task:', err),
     });
   }
 
   addTask() {
     this.taskService.createTask(this.newTask).subscribe(task => {
       this.tasks.push(task)
-      this.newTask = {id: 0, title: '', description: '', status: 'ToDo', createdAt: ''}
+      this.newTask = { title: '', description: '', status: 'ToDo',}
     })
   }
 }
