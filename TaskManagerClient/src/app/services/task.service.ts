@@ -1,16 +1,23 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
-import { Observable, Subject, take } from 'rxjs';
-import { TaskItem } from '../models/model';
+import { Observable, Subject } from 'rxjs';
+import { AuthService } from './auth.service';
 import { environment } from '../environments/environment';
 
+export interface TaskItem {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  createdAt: string;
+  assignedToId?: string;
+}
 
 export interface CreateTaskDto {
   title: string;
   description: string;
-  status?: string; // Optional, defaults to "ToDo" in backend
-  assignedToId?: number; // Optional
+  status?: string;
 }
 
 @Injectable({
@@ -19,44 +26,51 @@ export interface CreateTaskDto {
 export class TaskService {
   private apiUrl = environment.baseUrl+'/api/tasks';
   private hubConnection: HubConnection;
-  private taskCreateSubject = new Subject<TaskItem>()
-  private taskUpdateSubject = new Subject<{ taskId: string; status: string }>();
+  private taskCreatedSubject = new Subject<TaskItem>();
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private authService: AuthService) {
     this.hubConnection = new HubConnectionBuilder()
-      .withUrl(environment.baseUrl + '/taskHub')
+      .withUrl(environment.baseUrl + '/taskHub', {
+        accessTokenFactory: () => {
+          const token = this.authService.getToken();
+          console.log('SignalR Token:', token);
+          return token || '';
+        },
+      })
       .build();
 
     this.hubConnection
       .start()
       .then(() => console.log('SignalR Connected'))
-      .catch((err) => console.error('SignalR Connection Error:', err));
-
-    this.hubConnection.on(
-      'ReceiveTaskUpdate',
-      (taskId: string, status: string) => {
-        this.taskUpdateSubject.next({ taskId, status });
-      }
-    );
+      .catch((err) => console.error('SignalR Error:', err));
 
     this.hubConnection.on('ReceiveTaskCreated', (task: TaskItem) => {
-      this.taskCreateSubject.next(task)
+      this.taskCreatedSubject.next(task);
+    });
+  }
+
+  private getHeaders(): HttpHeaders {
+    const token = this.authService.getToken();
+    console.log('HTTP Token:', token);
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      Authorization: token ? `Bearer ${token}` : '',
     });
   }
 
   getTasks(): Observable<TaskItem[]> {
-    return this.http.get<TaskItem[]>(this.apiUrl);
+    return this.http.get<TaskItem[]>(this.apiUrl, {
+      headers: this.getHeaders(),
+    });
   }
 
   createTask(task: CreateTaskDto): Observable<TaskItem> {
-    return this.http.post<TaskItem>(this.apiUrl, task);
-  }
-
-  getTaskUpdates(): Observable<{ taskId: string; status: string }> {
-    return this.taskUpdateSubject.asObservable();
+    return this.http.post<TaskItem>(this.apiUrl, task, {
+      headers: this.getHeaders(),
+    });
   }
 
   getTaskCreated(): Observable<TaskItem> {
-    return this.taskCreateSubject.asObservable();
+    return this.taskCreatedSubject.asObservable();
   }
 }

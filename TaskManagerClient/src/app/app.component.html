@@ -1,1 +1,13 @@
-<router-outlet />
+<nav class="bg-gray-800 text-white p-4">
+      <div class="container mx-auto flex justify-between">
+        <a routerLink="/" class="font-bold">Task Manager</a>
+        <div *ngIf="user$ | async as user; else notLoggedIn">
+          Welcome, {{ user }} | <a href="#" (click)="logout()">Logout</a>
+        </div>
+        <ng-template #notLoggedIn>
+          <a routerLink="/login">Login</a> |
+          <a routerLink="/register">Register</a>
+        </ng-template>
+      </div>
+    </nav>
+    <router-outlet></router-outlet>
