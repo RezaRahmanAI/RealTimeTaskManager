@@ -4,40 +4,23 @@ import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import { Observable, Subject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
-import { environment } from '../environments/environment';
+import { CreateTaskDto, TaskItemWithEditing, UpdateTaskDto } from '../models/model';
 
-export interface TaskItem {
-  id: number;
-  title: string;
-  description: string;
-  status: string;
-  createdAt: string;
-  assignedToId: string;
-}
 
-export interface CreateTaskDto {
-  title: string;
-  description: string;
-  status?: string;
-}
-
-export interface UpdateTaskDto {
-  status: string;
-}
 
 @Injectable({
   providedIn: 'root',
 })
 export class TaskService {
-  private apiUrl = environment.baseUrl+'/api/tasks';
+  private apiUrl = 'https://localhost:5001/api/tasks';
   private hubConnection: HubConnection;
-  private taskCreatedSubject = new Subject<TaskItem>();
-  private taskUpdatedSubject = new Subject<TaskItem>();
+  private taskCreatedSubject = new Subject<TaskItemWithEditing>();
+  private taskUpdatedSubject = new Subject<TaskItemWithEditing>();
   private taskDeletedSubject = new Subject<number>();
 
   constructor(private http: HttpClient, private authService: AuthService) {
     this.hubConnection = new HubConnectionBuilder()
-      .withUrl(environment.baseUrl+'/taskHub', {
+      .withUrl('https://localhost:5001/taskHub', {
         accessTokenFactory: () => {
           const token = this.authService.getToken();
           console.log('SignalR Token:', token);
@@ -53,13 +36,14 @@ export class TaskService {
 
     this.hubConnection.on('ReceiveTaskCreated', (task: any) => {
       console.log('Raw SignalR Task:', task);
-      const mappedTask: TaskItem = {
+      const mappedTask: TaskItemWithEditing = {
         id: task.Id ?? task.id,
         title: task.Title ?? task.title ?? '',
         description: task.Description ?? task.description ?? '',
         status: task.Status ?? task.status ?? 'ToDo',
         createdAt: task.CreatedAt ?? task.createdAt,
         assignedToId: task.AssignedToId ?? task.assignedToId,
+        isEditing: false,
       };
       console.log('Mapped SignalR Task:', mappedTask);
       this.taskCreatedSubject.next(mappedTask);
@@ -67,13 +51,14 @@ export class TaskService {
 
     this.hubConnection.on('ReceiveTaskUpdated', (task: any) => {
       console.log('Raw SignalR Task Update:', task);
-      const mappedTask: TaskItem = {
+      const mappedTask: TaskItemWithEditing = {
         id: task.Id ?? task.id,
         title: task.Title ?? task.title ?? '',
         description: task.Description ?? task.description ?? '',
         status: task.Status ?? task.status ?? 'ToDo',
         createdAt: task.CreatedAt ?? task.createdAt,
         assignedToId: task.AssignedToId ?? task.assignedToId,
+        isEditing: false,
       };
       console.log('Mapped SignalR Task Update:', mappedTask);
       this.taskUpdatedSubject.next(mappedTask);
@@ -94,7 +79,7 @@ export class TaskService {
     });
   }
 
-  getTasks(): Observable<TaskItem[]> {
+  getTasks(): Observable<TaskItemWithEditing[]> {
     return this.http
       .get<any[]>(this.apiUrl, { headers: this.getHeaders() })
       .pipe(
@@ -106,12 +91,13 @@ export class TaskService {
             status: task.Status ?? 'ToDo',
             createdAt: task.CreatedAt,
             assignedToId: task.AssignedToId,
+            isEditing: false,
           }))
         )
       );
   }
 
-  createTask(task: CreateTaskDto): Observable<TaskItem> {
+  createTask(task: CreateTaskDto): Observable<TaskItemWithEditing> {
     return this.http
       .post<any>(this.apiUrl, task, { headers: this.getHeaders() })
       .pipe(
@@ -122,11 +108,15 @@ export class TaskService {
           status: task.Status ?? 'ToDo',
           createdAt: task.CreatedAt,
           assignedToId: task.AssignedToId,
+          isEditing: false,
         }))
       );
   }
 
-  updateTaskStatus(id: number, taskDto: UpdateTaskDto): Observable<TaskItem> {
+  updateTask(
+    id: number,
+    taskDto: UpdateTaskDto
+  ): Observable<TaskItemWithEditing> {
     return this.http
       .put<any>(`${this.apiUrl}/${id}`, taskDto, { headers: this.getHeaders() })
       .pipe(
@@ -137,6 +127,7 @@ export class TaskService {
           status: task.Status ?? 'ToDo',
           createdAt: task.CreatedAt,
           assignedToId: task.AssignedToId,
+          isEditing: false,
         }))
       );
   }
@@ -147,11 +138,11 @@ export class TaskService {
     });
   }
 
-  getTaskCreated(): Observable<TaskItem> {
+  getTaskCreated(): Observable<TaskItemWithEditing> {
     return this.taskCreatedSubject.asObservable();
   }
 
-  getTaskUpdated(): Observable<TaskItem> {
+  getTaskUpdated(): Observable<TaskItemWithEditing> {
     return this.taskUpdatedSubject.asObservable();
   }
 

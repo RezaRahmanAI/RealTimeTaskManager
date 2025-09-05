@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TaskService, UpdateTaskDto } from '../../services/task.service';
+import { TaskService } from '../../services/task.service';
 import { Router } from '@angular/router';
-import { CreateTaskDto, TaskItem } from '../../models/model';
+import { CreateTaskDto, TaskItemWithEditing, UpdateTaskDto } from '../../models/model';
 
 @Component({
   selector: 'app-task-list',
@@ -38,21 +38,62 @@ import { CreateTaskDto, TaskItem } from '../../models/model';
           *ngFor="let task of tasks"
           class="border p-2 mb-2 flex justify-between items-center"
         >
-          <span
-            >{{ task.title || 'No Title' }} -
-            {{ task.description || 'No Description' }} ({{
-              task.status || 'No Status'
-            }})</span
-          >
-          <div>
-            <select [(ngModel)]="task.status" (change)="updateTaskStatus(task)">
+          <div class="flex-1">
+            <div *ngIf="!task.isEditing; else editMode">
+              <span
+                >{{ task.title || 'No Title' }} -
+                {{ task.description || 'No Description' }} ({{
+                  task.status || 'No Status'
+                }})</span
+              >
+            </div>
+            <ng-template #editMode>
+              <input
+                [(ngModel)]="task.title"
+                placeholder="Task Title"
+                class="border p-2 mr-2 w-1/3"
+              />
+              <input
+                [(ngModel)]="task.description"
+                placeholder="Description"
+                class="border p-2 mr-2 w-1/3"
+              />
+            </ng-template>
+          </div>
+          <div class="flex items-center">
+            <select
+              [(ngModel)]="task.status"
+              (change)="updateTask(task)"
+              class="mr-2"
+            >
               <option value="ToDo">ToDo</option>
               <option value="InProgress">InProgress</option>
               <option value="Done">Done</option>
             </select>
             <button
+              *ngIf="!task.isEditing"
+              (click)="task.isEditing = true"
+              class="bg-yellow-500 text-white p-2 mr-2 rounded"
+            >
+              Edit
+            </button>
+            <button
+              *ngIf="task.isEditing"
+              (click)="updateTask(task)"
+              class="bg-green-500 text-white p-2 mr-2 rounded"
+            >
+              Save
+            </button>
+            <button
+              *ngIf="task.isEditing"
+              (click)="task.isEditing = false"
+              class="bg-gray-500 text-white p-2 mr-2 rounded"
+            >
+              Cancel
+            </button>
+            <button
               (click)="deleteTask(task.id)"
-              class="bg-red-500 text-white p-2 ml-2 rounded"
+              class="bg-red-500 text-white p-2 rounded"
             >
               Delete
             </button>
@@ -63,7 +104,7 @@ import { CreateTaskDto, TaskItem } from '../../models/model';
   `,
 })
 export class TaskListComponent implements OnInit {
-  tasks: TaskItem[] = [];
+  tasks: TaskItemWithEditing[] = [];
   newTask: CreateTaskDto = { title: '', description: '', status: 'ToDo' };
   errorMessage: string | null = null;
 
@@ -120,17 +161,22 @@ export class TaskListComponent implements OnInit {
     });
   }
 
-  updateTaskStatus(task: TaskItem) {
+  updateTask(task: TaskItemWithEditing) {
     console.log('Updating Task:', task);
-    const taskDto: UpdateTaskDto = { status: task.status };
-    this.taskService.updateTaskStatus(task.id, taskDto).subscribe({
+    const taskDto: UpdateTaskDto = {
+      title: task.title,
+      description: task.description,
+      status: task.status,
+    };
+    this.taskService.updateTask(task.id, taskDto).subscribe({
       next: (updatedTask) => {
-        console.log('Task Status Updated:', updatedTask);
+        console.log('Task Updated:', updatedTask);
+        task.isEditing = false;
         this.errorMessage = null;
       },
       error: (err) => {
-        this.errorMessage = err.error?.error || 'Error updating task status';
-        console.error('Error updating task status:', err);
+        this.errorMessage = err.error?.error || 'Error updating task';
+        console.error('Error updating task:', err);
       },
     });
   }

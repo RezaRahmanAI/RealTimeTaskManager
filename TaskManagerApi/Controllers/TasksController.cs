@@ -100,7 +100,11 @@ namespace TaskManagerApi.Controllers
                 {
                     return NotFound(new { Error = "Task not found or access denied" });
                 }
+
+                task.Title = taskDto.Title;
+                task.Description = taskDto.Description;
                 task.Status = taskDto.Status;
+
                 _context.Entry(task).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
                 Console.WriteLine($"Task Updated: {JsonSerializer.Serialize(task)}");
