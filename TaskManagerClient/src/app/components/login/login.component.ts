@@ -9,43 +9,55 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="container mx-auto p-4 max-w-md">
-      <h1 class="text-2xl font-bold mb-4">Login</h1>
-      <div *ngIf="errorMessage" class="text-red-500 mb-4">
-        {{ errorMessage }}
-      </div>
-      <form (ngSubmit)="login()">
-        <div class="mb-4">
-          <label class="block mb-1">Username</label>
-          <input
-            [(ngModel)]="model.username"
-            name="username"
-            class="border p-2 w-full"
-            required
-          />
-        </div>
-        <div class="mb-4">
-          <label class="block mb-1">Password</label>
-          <input
-            [(ngModel)]="model.password"
-            name="password"
-            type="password"
-            class="border p-2 w-full"
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          class="bg-blue-500 text-white p-2 rounded"
-          [disabled]="!model.username || !model.password"
+    <div
+      class="container mx-auto p-6 bg-gray-100 min-h-screen flex items-center justify-center"
+    >
+      <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Login</h1>
+        <div
+          *ngIf="errorMessage"
+          class="bg-red-100 text-red-700 p-4 rounded-lg mb-6"
         >
-          Login
-        </button>
-        <p class="mt-2">
-          Don't have an account?
-          <a routerLink="/register" class="text-blue-500">Register</a>
-        </p>
-      </form>
+          {{ errorMessage }}
+        </div>
+        <form (ngSubmit)="login()">
+          <div class="mb-4">
+            <label
+              for="username"
+              class="block text-sm font-medium text-gray-700 mb-1"
+              >Username</label
+            >
+            <input
+              id="username"
+              [(ngModel)]="model.username"
+              name="username"
+              placeholder="Enter username"
+              class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div class="mb-6">
+            <label
+              for="password"
+              class="block text-sm font-medium text-gray-700 mb-1"
+              >Password</label
+            >
+            <input
+              id="password"
+              type="password"
+              [(ngModel)]="model.password"
+              name="password"
+              placeholder="Enter password"
+              class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <button
+            type="submit"
+            class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200"
+          >
+            Login
+          </button>
+        </form>
+      </div>
     </div>
   `,
 })
