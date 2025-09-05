@@ -1,0 +1,16 @@
+<div class="container mx-auto p-4">
+      <h1 class="text-2xl font-bold mb-4">Task Manager</h1>
+      <div class="mb-4">
+        <input [(ngModel)]="newTask.title" placeholder="Task Title" class="border p-2 mr-2" />
+        <input [(ngModel)]="newTask.description" placeholder="Description" class="border p-2 mr-2" />
+        <button (click)="addTask()" class="bg-blue-500 text-white p-2 rounded">Add Task</button>
+      </div>
+      <ul class="space-y-2">
+        <li *ngFor="let task of tasks" class="border p-4 rounded">
+          <h2 class="text-lg font-semibold">{{ task.title }}</h2>
+          <p>{{ task.description }}</p>
+          <p>Status: {{ task.status }}</p>
+          <p>Created: {{ task.createdAt | date }}</p>
+        </li>
+      </ul>
+    </div>
