@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 using TaskManagerApi.Data;
 using TaskManagerApi.Dtos;
 using TaskManagerApi.Hubs;
@@ -27,17 +28,17 @@ namespace TaskManagerApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TaskItem>>> GetTasks()
         {
-            //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            //Console.WriteLine($"GetTasks: userId={userId}");
-            //if (string.IsNullOrEmpty(userId))
-            //{
-            //    return Unauthorized(new { Error = "User ID not found" });
-            //}
-            //return await _context.Tasks
-            //    .Where(t => t.AssignedToId == userId)
-            //    .ToListAsync();
-
-            return await _context.Tasks.ToListAsync();
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Console.WriteLine($"GetTasks: userId={userId}");
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { Error = "User ID not found" });
+            }
+            var tasks = await _context.Tasks
+                .Where(t => t.AssignedToId == userId)
+                .ToListAsync();
+            Console.WriteLine($"GetTasks: Returning {tasks.Count} tasks: {JsonSerializer.Serialize(tasks)}");
+            return tasks;
         }
 
         [HttpPost]
@@ -45,7 +46,7 @@ namespace TaskManagerApi.Controllers
         {
             try
             {
-                Console.WriteLine($"CreateTask: Title={taskDto.Title}");
+                Console.WriteLine($"CreateTask: Title={taskDto.Title}, Description={taskDto.Description}, Status={taskDto.Status}");
                 if (!ModelState.IsValid)
                 {
                     return BadRequest(new { Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
@@ -68,6 +69,7 @@ namespace TaskManagerApi.Controllers
 
                 _context.Tasks.Add(task);
                 await _context.SaveChangesAsync();
+                Console.WriteLine($"Task Created: {JsonSerializer.Serialize(task)}");
                 await _hubContext.Clients.All.SendAsync("ReceiveTaskCreated", task);
                 return CreatedAtAction(nameof(GetTasks), new { id = task.Id }, task);
             }

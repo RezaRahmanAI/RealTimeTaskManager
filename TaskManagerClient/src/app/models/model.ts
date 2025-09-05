@@ -4,5 +4,11 @@ export interface TaskItem {
   description: string;
   status: string;
   createdAt: string;
-  assignedToId?: number;
+  assignedToId: string;
+}
+
+export interface CreateTaskDto {
+  title: string;
+  description: string;
+  status?: string;
 }
