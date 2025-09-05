@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../services/task.service';
 import { Router } from '@angular/router';
-import { CreateTaskDto, TaskItem } from '../../models/model';
+import { CreateTaskDto, TaskItem, UpdateTaskDto } from '../../models/model';
 
 @Component({
   selector: 'app-task-list',
@@ -34,11 +34,21 @@ import { CreateTaskDto, TaskItem } from '../../models/model';
         </button>
       </div>
       <ul>
-        <li *ngFor="let task of tasks" class="border p-2 mb-2">
-          {{ task.title || 'No Title' }} -
-          {{ task.description || 'No Description' }} ({{
-            task.status || 'No Status'
-          }})
+        <li
+          *ngFor="let task of tasks"
+          class="border p-2 mb-2 flex justify-between items-center"
+        >
+          <span
+            >{{ task.title || 'No Title' }} -
+            {{ task.description || 'No Description' }} ({{
+              task.status || 'No Status'
+            }})</span
+          >
+          <select [(ngModel)]="task.status" (change)="updateTaskStatus(task)">
+            <option value="ToDo">ToDo</option>
+            <option value="InProgress">InProgress</option>
+            <option value="Done">Done</option>
+          </select>
         </li>
       </ul>
     </div>
@@ -71,6 +81,16 @@ export class TaskListComponent implements OnInit {
       console.log('New Task via SignalR:', task);
       this.tasks.push(task);
     });
+
+    this.taskService.getTaskUpdated().subscribe((updatedTask) => {
+      console.log('Updated Task via SignalR:', updatedTask);
+      const index = this.tasks.findIndex((t) => t.id === updatedTask.id);
+      if (index !== -1) {
+        this.tasks[index] = updatedTask;
+      } else {
+        this.tasks.push(updatedTask);
+      }
+    });
   }
 
   createTask() {
@@ -83,6 +103,21 @@ export class TaskListComponent implements OnInit {
       error: (err) => {
         this.errorMessage = err.error?.error || 'Error creating task';
         console.error('Error creating task:', err);
+      },
+    });
+  }
+
+  updateTaskStatus(task: TaskItem) {
+    console.log('Updating Task:', task);
+    const taskDto: UpdateTaskDto = { status: task.status };
+    this.taskService.updateTaskStatus(task.id, taskDto).subscribe({
+      next: (updatedTask) => {
+        console.log('Task Status Updated:', updatedTask);
+        this.errorMessage = null;
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.error || 'Error updating task status';
+        console.error('Error updating task status:', err);
       },
     });
   }

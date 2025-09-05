@@ -79,5 +79,39 @@ namespace TaskManagerApi.Controllers
                 return StatusCode(500, new { Error = "Task creation failed", Details = ex.Message });
             }
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateTask(int id, [FromBody] UpdateTaskDto taskDto)
+        {
+            try
+            {
+                Console.WriteLine($"UpdateTask: id={id}, Status={taskDto.Status}");
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new { Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+                }
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { Error = "User ID not found" });
+                }
+                var task = await _context.Tasks.FindAsync(id);
+                if (task == null || task.AssignedToId != userId)
+                {
+                    return NotFound(new { Error = "Task not found or access denied" });
+                }
+                task.Status = taskDto.Status;
+                _context.Entry(task).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"Task Updated: {JsonSerializer.Serialize(task)}");
+                await _hubContext.Clients.All.SendAsync("ReceiveTaskUpdate", task.Id, task.Status);
+                return Ok(task);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"UpdateTask Exception: {ex.Message}");
+                return StatusCode(500, new { Error = "Task update failed", Details = ex.Message });
+            }
+        }
     }
 }

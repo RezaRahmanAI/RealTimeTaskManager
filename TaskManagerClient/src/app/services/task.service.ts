@@ -4,7 +4,7 @@ import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import { Observable, Subject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
-import { CreateTaskDto, TaskItem } from '../models/model';
+import { CreateTaskDto, TaskItem, UpdateTaskDto } from '../models/model';
 
 
 
@@ -15,6 +15,7 @@ export class TaskService {
   private apiUrl = 'https://localhost:5001/api/tasks';
   private hubConnection: HubConnection;
   private taskCreatedSubject = new Subject<TaskItem>();
+  private taskUpdatedSubject = new Subject<TaskItem>();
 
   constructor(private http: HttpClient, private authService: AuthService) {
     this.hubConnection = new HubConnectionBuilder()
@@ -44,6 +45,20 @@ export class TaskService {
       };
       console.log('Mapped SignalR Task:', mappedTask);
       this.taskCreatedSubject.next(mappedTask);
+    });
+
+    this.hubConnection.on('ReceiveTaskUpdated', (task: any) => {
+      console.log('Raw SignalR Task Update:', task);
+      const mappedTask: TaskItem = {
+        id: task.Id ?? task.id,
+        title: task.Title ?? task.title ?? '',
+        description: task.Description ?? task.description ?? '',
+        status: task.Status ?? task.status ?? 'ToDo',
+        createdAt: task.CreatedAt ?? task.createdAt,
+        assignedToId: task.AssignedToId ?? task.assignedToId,
+      };
+      console.log('Mapped SignalR Task Update:', mappedTask);
+      this.taskUpdatedSubject.next(mappedTask);
     });
   }
 
@@ -90,5 +105,24 @@ export class TaskService {
 
   getTaskCreated(): Observable<TaskItem> {
     return this.taskCreatedSubject.asObservable();
+  }
+
+  updateTaskStatus(id: number, taskDto: UpdateTaskDto): Observable<TaskItem> {
+    return this.http
+      .put<any>(`${this.apiUrl}/${id}`, taskDto, { headers: this.getHeaders() })
+      .pipe(
+        map((task) => ({
+          id: task.Id,
+          title: task.Title ?? '',
+          description: task.Description ?? '',
+          status: task.Status ?? 'ToDo',
+          createdAt: task.CreatedAt,
+          assignedToId: task.AssignedToId,
+        }))
+      );
+  }
+
+  getTaskUpdated(): Observable<TaskItem> {
+    return this.taskUpdatedSubject.asObservable();
   }
 }
