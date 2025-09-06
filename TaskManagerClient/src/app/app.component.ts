@@ -1,24 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterOutlet } from '@angular/router';
+import { RouterOutlet, RouterLink } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from './services/auth.service';
-import { Observable } from 'rxjs';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule, RouterOutlet, RouterLink, MatButtonModule],
   templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css'],
 })
-export class AppComponent implements OnInit {
-  user$: Observable<string | null> | null = null; 
-
-  constructor(private authService: AuthService, private router: Router) {}
-
-  ngOnInit() {
-    this.user$ = this.authService.getUser();
-    this.user$.subscribe((user) => console.log('Current user:', user));
-  }
+export class AppComponent {
+  constructor(public authService: AuthService, private router: Router) {} // Made authService public
 
   logout() {
     this.authService.logout();

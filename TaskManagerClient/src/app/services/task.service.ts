@@ -1,152 +1,96 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
-import { Observable, Subject } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { AuthService } from './auth.service';
-import { CreateTaskDto, TaskItemWithEditing, UpdateTaskDto } from '../models/model';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../environments/environment';
+import {
+  Task,
+  Project,
+  Comment,
+  Attachment,
+  Notification,
+} from '../models/model';
 
-
-
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class TaskService {
-  private apiUrl = 'https://localhost:5001/api/tasks';
-  private hubConnection: HubConnection;
-  private taskCreatedSubject = new Subject<TaskItemWithEditing>();
-  private taskUpdatedSubject = new Subject<TaskItemWithEditing>();
-  private taskDeletedSubject = new Subject<number>();
+  private apiUrl = `${environment.apiUrl}/tasks`;
+  private usersUrl = `${environment.apiUrl}/users`;
 
-  constructor(private http: HttpClient, private authService: AuthService) {
-    this.hubConnection = new HubConnectionBuilder()
-      .withUrl('https://localhost:5001/taskHub', {
-        accessTokenFactory: () => {
-          const token = this.authService.getToken();
-          console.log('SignalR Token:', token);
-          return token || '';
-        },
-      })
-      .build();
+  constructor(private http: HttpClient) {}
 
-    this.hubConnection
-      .start()
-      .then(() => console.log('SignalR Connected'))
-      .catch((err) => console.error('SignalR Error:', err));
-
-    this.hubConnection.on('ReceiveTaskCreated', (task: any) => {
-      console.log('Raw SignalR Task:', task);
-      const mappedTask: TaskItemWithEditing = {
-        id: task.Id ?? task.id,
-        title: task.Title ?? task.title ?? '',
-        description: task.Description ?? task.description ?? '',
-        status: task.Status ?? task.status ?? 'ToDo',
-        createdAt: task.CreatedAt ?? task.createdAt,
-        assignedToId: task.AssignedToId ?? task.assignedToId,
-        isEditing: false,
-      };
-      console.log('Mapped SignalR Task:', mappedTask);
-      this.taskCreatedSubject.next(mappedTask);
-    });
-
-    this.hubConnection.on('ReceiveTaskUpdated', (task: any) => {
-      console.log('Raw SignalR Task Update:', task);
-      const mappedTask: TaskItemWithEditing = {
-        id: task.Id ?? task.id,
-        title: task.Title ?? task.title ?? '',
-        description: task.Description ?? task.description ?? '',
-        status: task.Status ?? task.status ?? 'ToDo',
-        createdAt: task.CreatedAt ?? task.createdAt,
-        assignedToId: task.AssignedToId ?? task.assignedToId,
-        isEditing: false,
-      };
-      console.log('Mapped SignalR Task Update:', mappedTask);
-      this.taskUpdatedSubject.next(mappedTask);
-    });
-
-    this.hubConnection.on('ReceiveTaskDeleted', (taskId: number) => {
-      console.log('SignalR Task Deleted:', taskId);
-      this.taskDeletedSubject.next(taskId);
-    });
+  getTasks(filters: any = {}): Observable<Task[]> {
+    let params = new HttpParams();
+    if (filters.projectId) params = params.set('projectId', filters.projectId);
+    if (filters.status) params = params.set('status', filters.status);
+    if (filters.priority) params = params.set('priority', filters.priority);
+    if (filters.search) params = params.set('search', filters.search);
+    return this.http.get<Task[]>(this.apiUrl, { params });
   }
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    console.log('HTTP Token:', token);
-    return new HttpHeaders({
-      'Content-Type': 'application/json',
-      Authorization: token ? `Bearer ${token}` : '',
-    });
+  createTask(task: Partial<Task>): Observable<Task> {
+    return this.http.post<Task>(this.apiUrl, task);
   }
 
-  getTasks(): Observable<TaskItemWithEditing[]> {
-    return this.http
-      .get<any[]>(this.apiUrl, { headers: this.getHeaders() })
-      .pipe(
-        map((tasks) =>
-          tasks.map((task) => ({
-            id: task.Id,
-            title: task.Title ?? '',
-            description: task.Description ?? '',
-            status: task.Status ?? 'ToDo',
-            createdAt: task.CreatedAt,
-            assignedToId: task.AssignedToId,
-            isEditing: false,
-          }))
-        )
-      );
-  }
-
-  createTask(task: CreateTaskDto): Observable<TaskItemWithEditing> {
-    return this.http
-      .post<any>(this.apiUrl, task, { headers: this.getHeaders() })
-      .pipe(
-        map((task) => ({
-          id: task.Id,
-          title: task.Title ?? '',
-          description: task.Description ?? '',
-          status: task.Status ?? 'ToDo',
-          createdAt: task.CreatedAt,
-          assignedToId: task.AssignedToId,
-          isEditing: false,
-        }))
-      );
-  }
-
-  updateTask(
-    id: number,
-    taskDto: UpdateTaskDto
-  ): Observable<TaskItemWithEditing> {
-    return this.http
-      .put<any>(`${this.apiUrl}/${id}`, taskDto, { headers: this.getHeaders() })
-      .pipe(
-        map((task) => ({
-          id: task.Id,
-          title: task.Title ?? '',
-          description: task.Description ?? '',
-          status: task.Status ?? 'ToDo',
-          createdAt: task.CreatedAt,
-          assignedToId: task.AssignedToId,
-          isEditing: false,
-        }))
-      );
+  updateTask(id: number, task: Partial<Task>): Observable<Task> {
+    return this.http.put<Task>(`${this.apiUrl}/${id}`, task);
   }
 
   deleteTask(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`, {
-      headers: this.getHeaders(),
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  getProjects(): Observable<Project[]> {
+    return this.http.get<Project[]>(`${environment.apiUrl}/projects`);
+  }
+
+  createProject(project: {
+    name: string;
+    description?: string;
+  }): Observable<Project> {
+    return this.http.post<Project>(`${environment.apiUrl}/projects`, project);
+  }
+
+  joinProject(projectId: number): Observable<void> {
+    return this.http.post<void>(
+      `${environment.apiUrl}/projects/${projectId}/join`,
+      {}
+    );
+  }
+
+  addMember(projectId: number, username: string): Observable<void> {
+    return this.http.post<void>(
+      `${environment.apiUrl}/projects/${projectId}/members`,
+      { username }
+    );
+  }
+
+  addComment(
+    taskId: number,
+    comment: { content: string }
+  ): Observable<Comment> {
+    return this.http.post<Comment>(
+      `${this.apiUrl}/${taskId}/comments`,
+      comment
+    );
+  }
+
+  uploadAttachment(taskId: number, formData: FormData): Observable<Attachment> {
+    return this.http.post<Attachment>(
+      `${this.apiUrl}/${taskId}/attachments`,
+      formData
+    );
+  }
+
+  getNotifications(): Observable<Notification[]> {
+    return this.http.get<Notification[]>(`${this.usersUrl}/notifications`);
+  }
+
+  markNotificationRead(id: number): Observable<void> {
+    return this.http.put<void>(`${this.usersUrl}/notifications/${id}/read`, {});
+  }
+
+  searchUsers(query: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.usersUrl}/search`, {
+      params: { query },
     });
-  }
-
-  getTaskCreated(): Observable<TaskItemWithEditing> {
-    return this.taskCreatedSubject.asObservable();
-  }
-
-  getTaskUpdated(): Observable<TaskItemWithEditing> {
-    return this.taskUpdatedSubject.asObservable();
-  }
-
-  getTaskDeleted(): Observable<number> {
-    return this.taskDeletedSubject.asObservable();
   }
 }

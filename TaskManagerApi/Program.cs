@@ -12,9 +12,12 @@ builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null);
 builder.Services.AddDbContext<TaskDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+builder.Services.AddIdentity<IdentityUser, IdentityRole>()  // Updated to include roles
     .AddEntityFrameworkStores<TaskDbContext>()
     .AddDefaultTokenProviders();
+
+builder.Services.AddScoped<RoleManager<IdentityRole>>();
+
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
@@ -94,6 +97,7 @@ app.UseCors("AllowAngularApp");
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStaticFiles();
 app.MapControllers();
 app.MapHub<TaskHub>("/taskHub");
 

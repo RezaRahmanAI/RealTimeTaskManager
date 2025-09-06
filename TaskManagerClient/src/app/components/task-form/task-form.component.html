@@ -1,0 +1,53 @@
+<div class="p-4">
+  <h2 class="text-xl font-bold mb-4">{{ data.task ? 'Edit Task' : 'Create Task' }}</h2>
+  <form [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
+    <mat-form-field class="w-full">
+      <mat-label>Title</mat-label>
+      <input matInput formControlName="title" required aria-required="true">
+    </mat-form-field>
+    <mat-form-field class="w-full">
+      <mat-label>Description</mat-label>
+      <textarea matInput formControlName="description"></textarea>
+    </mat-form-field>
+    <mat-form-field class="w-full">
+      <mat-label>Status</mat-label>
+      <mat-select formControlName="status" required aria-required="true">
+        <mat-option value="Pending">Pending</mat-option>
+        <mat-option value="In Progress">In Progress</mat-option>
+        <mat-option value="Completed">Completed</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field class="w-full">
+      <mat-label>Priority</mat-label>
+      <mat-select formControlName="priority" required aria-required="true">
+        <mat-option value="Low">Low</mat-option>
+        <mat-option value="Medium">Medium</mat-option>
+        <mat-option value="High">High</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field class="w-full">
+      <mat-label>Due Date</mat-label>
+      <input matInput type="date" formControlName="dueDate" required aria-required="true">
+    </mat-form-field>
+    <mat-form-field class="w-full">
+      <mat-label>Assigned To</mat-label>
+      <input matInput [matAutocomplete]="auto" formControlName="assignedToId" (searchUsers(($event.target as any).value))
+>
+      <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayUser">
+        <mat-option *ngFor="let user of filteredUsers | async" [value]="user.id">
+          {{ user.userName }}
+        </mat-option>
+      </mat-autocomplete>
+    </mat-form-field>
+    <mat-form-field class="w-full">
+      <mat-label>Project</mat-label>
+      <mat-select formControlName="projectId" required aria-required="true">
+        <mat-option *ngFor="let project of projects" [value]="project.id">{{ project.name }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <div class="flex justify-end space-x-2">
+      <button mat-button (click)="dialogRef.close()" aria-label="Cancel">Cancel</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid" aria-label="Save task">Save</button>
+    </div>
+  </form>
+</div>

@@ -25,11 +25,13 @@ namespace TaskManagerApi.Controllers
     public class AuthController : ControllerBase
     {
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;  // Added
         private readonly IConfiguration _configuration;
 
-        public AuthController(UserManager<IdentityUser> userManager, IConfiguration configuration)
+        public AuthController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
         {
             _userManager = userManager;
+            _roleManager = roleManager;
             _configuration = configuration;
             Console.WriteLine("AuthController initialized");
         }
@@ -51,6 +53,17 @@ namespace TaskManagerApi.Controllers
                 var result = await _userManager.CreateAsync(user, model.Password);
                 if (result.Succeeded)
                 {
+                    if (!await _roleManager.RoleExistsAsync("User"))
+                        await _roleManager.CreateAsync(new IdentityRole("User"));
+                    await _userManager.AddToRoleAsync(user, "User");
+                    // For demo, make first user admin
+                    var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
+                    if (adminUsers.Count == 0)
+                    {
+                        if (!await _roleManager.RoleExistsAsync("Admin"))
+                            await _roleManager.CreateAsync(new IdentityRole("Admin"));
+                        await _userManager.AddToRoleAsync(user, "Admin");
+                    }
                     Console.WriteLine($"User {model.Username} registered");
                     return Ok(new { Message = "User registered successfully" });
                 }

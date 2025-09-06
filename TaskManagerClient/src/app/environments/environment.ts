@@ -1,3 +1,5 @@
 export const environment = {
-  baseUrl : 'https://localhost:5001',
+  production: false,
+  apiUrl: 'http://localhost:5000/api',
+  signalrUrl: 'http://localhost:5000/taskHub',
 };

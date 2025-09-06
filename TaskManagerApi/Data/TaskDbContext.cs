@@ -9,5 +9,17 @@ namespace TaskManagerApi.Data
     {
         public TaskDbContext(DbContextOptions<TaskDbContext> options) : base(options) { }
         public DbSet<TaskItem> Tasks { get; set; }
+        public DbSet<Project> Projects { get; set; }
+        public DbSet<Comment> Comments { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Attachment> Attachments { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<Project>()
+                .HasMany(p => p.Members)
+                .WithMany();
+        }
     }
 }

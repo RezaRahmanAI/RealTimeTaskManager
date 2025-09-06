@@ -1,0 +1,33 @@
+<div class="mb-8 bg-white p-4 rounded shadow">
+  <h2 class="text-lg font-semibold mb-4">Projects</h2>
+  <form [formGroup]="projectForm" (ngSubmit)="createProject()" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <mat-form-field>
+      <mat-label>Project Name</mat-label>
+      <input matInput formControlName="name" required aria-required="true">
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Description</mat-label>
+      <input matInput formControlName="description">
+    </mat-form-field>
+    <button mat-raised-button color="primary" type="submit" [disabled]="projectForm.invalid" aria-label="Create project">Create Project</button>
+  </form>
+  <form [formGroup]="addMemberForm" (ngSubmit)="addMember()" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <mat-form-field>
+      <mat-label>Project</mat-label>
+      <mat-select formControlName="projectId" required aria-required="true">
+        <mat-option *ngFor="let project of projects" [value]="project.id">{{ project.name }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Username</mat-label>
+      <input matInput formControlName="username" required aria-required="true">
+    </mat-form-field>
+    <button mat-raised-button color="primary" type="submit" [disabled]="addMemberForm.invalid" aria-label="Add member">Add Member</button>
+  </form>
+  <ul class="space-y-2" role="list" aria-label="Project list">
+    <li *ngFor="let project of projects" class="flex justify-between items-center">
+      <span>{{ project.name }} ({{ project.description }})</span>
+      <button mat-button color="accent" (click)="joinProject(project.id)" aria-label="Join project">Join</button>
+    </li>
+  </ul>
+</div>

@@ -1,88 +1,68 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
-import { tap } from 'rxjs/operators';
-import { jwtDecode } from 'jwt-decode';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../environments/environment';
 
-export interface RegisterModel {
+interface RegisterModel {
   username: string;
   email: string;
   password: string;
 }
 
-export interface LoginModel {
+interface LoginModel {
   username: string;
   password: string;
 }
 
-export interface DecodedToken {
-  sub: string;
-  nameid: string;
-  exp: number;
+interface LoginResponse {
+  token: string;
+  Token?: string; // Handle case sensitivity from API
 }
 
-@Injectable({
-  providedIn: 'root',
-})
+interface Profile {
+  userName: string;
+  email: string;
+}
+
+@Injectable({ providedIn: 'root' })
 export class AuthService {
-  private apiUrl = environment.baseUrl+'/api/auth';
-  private tokenSubject = new BehaviorSubject<string | null>(
-    localStorage.getItem('token')
-  );
-  private userSubject = new BehaviorSubject<string | null>(null);
+  private apiUrl = `${environment.apiUrl}/auth`;
 
-  constructor(private http: HttpClient) {
-    const token = this.tokenSubject.value;
-    if (token) {
-      try {
-        const decoded = jwtDecode<DecodedToken>(token);
-        this.userSubject.next(decoded.sub);
-      } catch (err) {
-        console.error('Token decode error:', err);
-        this.logout();
-      }
-    }
+  constructor(private http: HttpClient) {}
+
+  register(user: RegisterModel): Observable<any> {
+    return this.http.post(`${this.apiUrl}/register`, user);
   }
 
-  register(model: RegisterModel): Observable<any> {
-    return this.http.post(`${this.apiUrl}/register`, model);
-  }
-
-  login(model: LoginModel): Observable<any> {
+  login(credentials: LoginModel): Observable<LoginResponse> {
     return this.http
-      .post<{ Token: string }>(`${this.apiUrl}/login`, model)
+      .post<LoginResponse>(`${this.apiUrl}/login`, credentials)
       .pipe(
-        tap({
-          next: (response) => {
-            const token = response.Token; // Use uppercase Token
-            console.log('Login token:', token);
-            if (!token) {
-              throw new Error('No token received from server');
-            }
-            localStorage.setItem('token', token);
-            const decoded = jwtDecode<DecodedToken>(token);
-            this.tokenSubject.next(token);
-            this.userSubject.next(decoded.sub);
-          },
-          error: (err) => {
-            console.error('Login request error:', err);
-          },
-        })
+        tap((res) =>
+          localStorage.setItem('token', res.token || res.Token || '')
+        )
       );
   }
 
-  logout() {
-    localStorage.removeItem('token');
-    this.tokenSubject.next(null);
-    this.userSubject.next(null);
-  }
-
   getToken(): string | null {
-    return this.tokenSubject.value;
+    return localStorage.getItem('token');
   }
 
-  getUser(): Observable<string | null> {
-    return this.userSubject.asObservable();
+  isLoggedIn(): boolean {
+    return !!this.getToken();
+  }
+
+  logout(): void {
+    localStorage.removeItem('token');
+  }
+
+  getProfile(): Observable<Profile> {
+    return this.http.get<Profile>(`${environment.apiUrl}/users/profile`);
+  }
+
+  updateProfile(
+    profile: Partial<Profile> & { password?: string }
+  ): Observable<any> {
+    return this.http.put(`${environment.apiUrl}/users/profile`, profile);
   }
 }

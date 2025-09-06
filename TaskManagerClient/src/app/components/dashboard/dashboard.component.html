@@ -1,0 +1,62 @@
+<div class="container mx-auto p-4" *ngIf="authService.isLoggedIn(); else loginTemplate">
+  <h1 class="text-2xl font-bold mb-4">Task Management Dashboard</h1>
+  <div class="flex justify-between mb-4">
+    <button mat-raised-button color="primary" (click)="openTaskForm()" aria-label="Create new task">
+      Create Task
+    </button>
+    <app-notifications></app-notifications>
+  </div>
+  <!-- Filters -->
+  <div class="mb-4 bg-white p-4 rounded shadow">
+    <h2 class="text-lg font-semibold">Filters</h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <mat-form-field>
+        <mat-label>Project</mat-label>
+        <mat-select [(ngModel)]="filters.projectId" (selectionChange)="applyFilters()" aria-label="Select project">
+          <mat-option value="">All</mat-option>
+          <mat-option *ngFor="let project of projects" [value]="project.id">{{ project.name }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Status</mat-label>
+        <mat-select [(ngModel)]="filters.status" (selectionChange)="applyFilters()" aria-label="Select status">
+          <mat-option value="">All</mat-option>
+          <mat-option value="Pending">Pending</mat-option>
+          <mat-option value="In Progress">In Progress</mat-option>
+          <mat-option value="Completed">Completed</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Priority</mat-label>
+        <mat-select [(ngModel)]="filters.priority" (selectionChange)="applyFilters()" aria-label="Select priority">
+          <mat-option value="">All</mat-option>
+          <mat-option value="Low">Low</mat-option>
+          <mat-option value="Medium">Medium</mat-option>
+          <mat-option value="High">High</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <input matInput [(ngModel)]="filters.search" placeholder="Search tasks" (input)="applyFilters()" aria-label="Search tasks">
+      </mat-form-field>
+    </div>
+  </div>
+  <app-project-list (projectCreated)="loadProjects()" (projectJoined)="loadProjects()"></app-project-list>
+  <app-task-list [tasks]="tasks" (editTask)="openTaskForm($event)"></app-task-list>
+  <div class="mt-8 max-w-md mx-auto">
+    <h2 class="text-lg font-semibold">Task Status Distribution</h2>
+    <canvas
+      baseChart
+      [data]="pieChartData"
+      [options]="pieChartOptions"
+      type="pie"
+      aria-label="Task status distribution pie chart"
+    ></canvas>
+  </div>
+</div>
+<ng-template #loginTemplate>
+  <div class="container mx-auto p-4 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-6 rounded shadow max-w-md w-full">
+      <p class="text-lg">Please log in to access the dashboard.</p>
+    </div>
+  </div>
+</ng-template>

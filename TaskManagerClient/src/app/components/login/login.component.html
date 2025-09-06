@@ -1,1 +1,18 @@
-
+<div class="flex items-center justify-center min-h-screen bg-gray-100">
+  <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
+    <form (ngSubmit)="onSubmit()" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Username</label>
+        <input type="text" [(ngModel)]="loginModel.username" name="username" class="mt-1 block w-full p-2 border rounded-md" required>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Password</label>
+        <input type="password" [(ngModel)]="loginModel.password" name="password" class="mt-1 block w-full p-2 border rounded-md" required>
+      </div>
+      <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700">Login</button>
+      <p *ngIf="error" class="text-red-500 text-center">{{ error }}</p>
+      <p class="text-center mt-4">Don't have an account? <a routerLink="/register" class="text-blue-600">Register</a></p>
+    </form>
+  </div>
+</div>
