@@ -34,6 +34,6 @@
 
     public class AttachmentDto
     {
-        public IFormFile File { get; set; }  // For uploads
+        public IFormFile File { get; set; }  
     }
 }

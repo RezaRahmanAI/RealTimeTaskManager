@@ -12,7 +12,7 @@ using TaskManagerApi.Data;
 namespace TaskManagerApi.Migrations
 {
     [DbContext(typeof(TaskDbContext))]
-    [Migration("20250906071455_V2Testing")]
+    [Migration("20250906160213_V2Testing")]
     partial class V2Testing
     {
         /// <inheritdoc />

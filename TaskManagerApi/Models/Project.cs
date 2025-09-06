@@ -8,8 +8,8 @@ namespace TaskManagerApi.Models
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public string OwnerId { get; set; } = string.Empty;  // Creator
+        public string OwnerId { get; set; } = string.Empty;  
         public ICollection<TaskItem>? Tasks { get; set; }
-        public ICollection<IdentityUser>? Members { get; set; }  // For advanced teams
+        public ICollection<IdentityUser>? Members { get; set; }  
     }
 }

@@ -42,7 +42,7 @@ namespace TaskManagerApi.Controllers
         public async Task<ActionResult<Project>> CreateProject([FromBody] CreateProjectDto projectDto)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var user = await _userManager.FindByNameAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId);
             var project = new Project
             {
                 Name = projectDto.Name,
